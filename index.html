@@ -1,0 +1,327 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<title>Residentfy en La Joya</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&display=swap">
+<style>
+/* Layout: phone-first field guide. SOS band on top, task grid, one task open at a time as a step list. */
+:root{
+  --bg:#f3f5ef; --surface:#ffffff; --ink:#1d2a22; --muted:#5b6a60; --line:#d9e0d6;
+  --forest:#2f5d43; --forest-soft:#e3ece4; --ochre:#c98a1b; --ochre-soft:#fbf0d9;
+  --sos:#c7362f; --sos-soft:#fbe5e3; --ok:#2f7d4f;
+  --display:"Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --body:"Atkinson Hyperlegible", "Segoe UI", system-ui, sans-serif;
+  --r:14px;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#121915; --surface:#1a241e; --ink:#e7eee8; --muted:#9db0a3; --line:#2c3a31;
+  --forest:#7cc29a; --forest-soft:#20342a; --ochre:#e7ad48; --ochre-soft:#3a2f18;
+  --sos:#ff6b62; --sos-soft:#3c1d1b; --ok:#6fd297; color-scheme:dark }}
+:root[data-theme="dark"]{
+  --bg:#121915; --surface:#1a241e; --ink:#e7eee8; --muted:#9db0a3; --line:#2c3a31;
+  --forest:#7cc29a; --forest-soft:#20342a; --ochre:#e7ad48; --ochre-soft:#3a2f18;
+  --sos:#ff6b62; --sos-soft:#3c1d1b; --ok:#6fd297; color-scheme:dark }
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:17px;line-height:1.5;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:20px 48px}
+.wrap{max-width:760px;margin:0 auto;display:flex;flex-direction:column;gap:28px}
+h1,h2,h3{font-family:var(--display);text-wrap:balance;margin:0;line-height:1.15}
+h1{font-size:clamp(30px,7vw,42px);font-weight:800;letter-spacing:-.01em}
+h2{font-size:22px;font-weight:800}
+h3{font-size:19px;font-weight:600}
+p{margin:0}
+.eyebrow{font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:var(--forest);font-weight:700}
+.lede{color:var(--muted);max-width:60ch}
+header{display:flex;flex-direction:column;gap:8px}
+
+/* SOS */
+.sos{background:var(--sos-soft);border:2px solid var(--sos);border-radius:var(--r);padding:18px;display:grid;grid-template-columns:auto 1fr;gap:16px;align-items:center}
+.sos-dot{width:72px;height:72px;border-radius:50%;background:var(--sos);color:#fff;display:grid;place-items:center;font-family:var(--display);font-weight:800;font-size:22px;position:relative}
+.sos-dot span{position:absolute;bottom:-8px;right:-8px;background:var(--surface);color:var(--sos);border:2px solid var(--sos);border-radius:999px;font-size:14px;padding:1px 8px}
+.sos h2{color:var(--sos)}
+.sos ol{margin:6px 0 0;padding-left:20px}
+.sos li{margin:2px 0}
+
+/* search + grid */
+.find{display:flex;flex-direction:column;gap:12px}
+.search{width:100%;font:inherit;padding:14px 16px;border-radius:12px;border:1.5px solid var(--line);background:var(--surface);color:var(--ink)}
+.search:focus-visible{outline:3px solid var(--forest);outline-offset:1px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px}
+.tile{all:unset;cursor:pointer;background:var(--surface);border:1.5px solid var(--line);border-radius:var(--r);padding:14px;display:flex;flex-direction:column;gap:6px;min-height:104px}
+.tile:hover{border-color:var(--forest)}
+.tile:focus-visible{outline:3px solid var(--forest);outline-offset:2px}
+.tile[aria-pressed="true"]{background:var(--forest);border-color:var(--forest);color:var(--bg)}
+.tile[aria-pressed="true"] .tile-sub{color:var(--bg);opacity:.85}
+.tile svg{width:26px;height:26px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.tile-name{font-family:var(--display);font-weight:600;font-size:17px;line-height:1.2}
+.tile-sub{font-size:14px;color:var(--muted);line-height:1.3}
+.empty{color:var(--muted);font-style:italic}
+
+/* detail */
+.detail{background:var(--surface);border:1.5px solid var(--line);border-radius:var(--r);padding:20px;display:flex;flex-direction:column;gap:16px;scroll-margin-top:12px}
+.path{display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-size:14px}
+.path b{background:var(--forest-soft);color:var(--forest);padding:3px 10px;border-radius:999px;font-weight:700}
+.path i{color:var(--muted);font-style:normal}
+.steps{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px;counter-reset:s}
+.steps li{counter-increment:s}
+.steps label{display:grid;grid-template-columns:32px 1fr;gap:12px;align-items:start;cursor:pointer;padding:10px;border-radius:10px;border:1px solid var(--line)}
+.steps input{position:absolute;opacity:0;pointer-events:none}
+.steps .n{width:32px;height:32px;border-radius:50%;border:2px solid var(--forest);color:var(--forest);display:grid;place-items:center;font-weight:700;font-size:15px}
+.steps .n::before{content:counter(s)}
+.steps input:checked + label{background:var(--forest-soft);border-color:transparent}
+.steps input:checked + label .n{background:var(--forest);color:var(--surface)}
+.steps input:checked + label .n::before{content:"✓"}
+.steps input:checked + label .t{color:var(--muted);text-decoration:line-through;text-decoration-color:var(--line)}
+.steps input:focus-visible + label{outline:3px solid var(--forest);outline-offset:1px}
+.t b{font-weight:700}
+.note{background:var(--ochre-soft);border-radius:10px;padding:12px 14px;display:flex;flex-direction:column;gap:6px}
+.note strong{color:var(--ochre);font-size:13px;letter-spacing:.06em;text-transform:uppercase}
+.note ul{margin:0;padding-left:18px}
+.row{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between}
+.btn{font:inherit;font-weight:700;font-size:15px;border-radius:999px;padding:10px 16px;border:1.5px solid var(--forest);background:transparent;color:var(--forest);cursor:pointer;text-decoration:none}
+.btn:focus-visible{outline:3px solid var(--forest);outline-offset:2px}
+.btn.solid{background:var(--forest);color:var(--surface)}
+.done{color:var(--ok);font-weight:700}
+
+/* status pipeline */
+.pipe{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.pipe div{border-radius:10px;padding:8px 10px;font-size:14px;line-height:1.3;border:1px solid var(--line)}
+.pipe b{display:block;font-family:var(--display);font-size:15px}
+.pipe .p1{border-color:var(--ochre)} .pipe .p1 b{color:var(--ochre)}
+.pipe .p3{border-color:var(--ok)} .pipe .p3 b{color:var(--ok)}
+
+/* decide */
+.decide{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px}
+.opt{border:1.5px solid var(--line);border-radius:var(--r);padding:14px;background:var(--surface);display:flex;flex-direction:column;gap:6px}
+.opt h3{color:var(--forest)}
+.opt p{font-size:15px;color:var(--muted)}
+.opt button{align-self:flex-start;margin-top:4px}
+
+/* rules */
+.rules{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin:0;padding:0;list-style:none}
+.rules li{border-top:2px solid var(--forest);padding-top:8px;font-size:15px}
+.rules b{display:block;font-family:var(--display);font-size:16px;margin-bottom:2px}
+footer{font-size:13px;color:var(--muted);border-top:1px solid var(--line);padding-top:14px}
+@media (max-width:420px){.sos{grid-template-columns:1fr}.pipe{grid-template-columns:1fr}}
+@media (prefers-reduced-motion:no-preference){.detail{animation:in .18s ease-out}@keyframes in{from{transform:translateY(6px)}to{transform:none}}}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header>
+    <span class="eyebrow">La Joya Campestre · Montemorelos, N.L.</span>
+    <h1>Residentfy, paso a paso</h1>
+    <p class="lede">Elige lo que quieres hacer y sigue los pasos. Puedes ir palomeando cada uno conforme avanzas en la app.</p>
+  </header>
+
+  <section class="sos" aria-labelledby="sos-h">
+    <div class="sos-dot" aria-hidden="true">SOS<span>×3</span></div>
+    <div>
+      <h2 id="sos-h">Emergencia: botón de pánico</h2>
+      <ol>
+        <li>En <b>Inicio</b>, toca el botón rojo de pánico.</li>
+        <li>Presiona <b>SOS 3 veces</b>. No pide confirmación: se envía al tercer toque.</li>
+        <li><b>Acepta compartir tu ubicación.</b> Verás “Ubicación compartida” arriba del botón.</li>
+      </ol>
+      <p style="font-size:15px;color:var(--muted);margin-top:6px">Avisa a todos los vecinos, a vigilancia y a la administración con tu calle, número y ubicación.</p>
+    </div>
+  </section>
+
+  <section class="find" aria-labelledby="find-h">
+    <h2 id="find-h">¿Qué necesitas hacer?</h2>
+    <input id="q" class="search" type="search" placeholder="Busca: pago, visita, alberca, fuga, votar…" autocomplete="off" aria-label="Buscar trámite">
+    <div class="grid" id="grid" role="group" aria-label="Trámites"></div>
+    <p class="empty" id="empty" hidden>No encontré ese trámite. Prueba con otra palabra o usa el chat con vigilancia.</p>
+  </section>
+
+  <section id="detail" class="detail" aria-live="polite"></section>
+
+  <section aria-labelledby="dec-h" style="display:flex;flex-direction:column;gap:12px">
+    <h2 id="dec-h">¿Qué tipo de visita registro?</h2>
+    <div class="decide">
+      <div class="opt"><h3>Frecuente</h3><p>Viene seguido: familia, trabajadora del hogar, jardinero, albañiles de tu obra.</p><button class="btn" data-go="frecuente">Ver pasos</button></div>
+      <div class="opt"><h3>Eventual</h3><p>Viene una sola vez: repartidor, paquetería, un amigo. Solo vale el día que lo programas.</p><button class="btn" data-go="eventual">Ver pasos</button></div>
+      <div class="opt"><h3>Evento o reunión</h3><p>Varios invitados el mismo día. Un solo registro y una clave para todos.</p><button class="btn" data-go="evento">Ver pasos</button></div>
+    </div>
+  </section>
+
+  <section aria-labelledby="rules-h" style="display:flex;flex-direction:column;gap:12px">
+    <h2 id="rules-h">Lo que conviene tener presente</h2>
+    <ul class="rules">
+      <li><b>Tu clave y PIN</b>Te los da la administración. Guárdalos en un lugar seguro y no los compartas.</li>
+      <li><b>Pagos</b>Subir el comprobante te toca a ti. El pago queda aprobado hasta que la mesa directiva lo valida.</li>
+      <li><b>Visitas eventuales</b>Solo entran el día programado. Si no llegaron, hay que registrarlas otra vez.</li>
+      <li><b>Obras y trabajadores</b>Al terminar el contrato, desactiva su acceso frecuente ese mismo día.</li>
+      <li><b>Reservas</b>Apartar en la app no basta: espera la aprobación de la administración.</li>
+      <li><b>Encuestas</b>Un voto por residente. Los resultados se ven después de votar.</li>
+    </ul>
+  </section>
+
+  <footer>Basado en el Manual del Residente de Residentfy, versión 1.6. Los números de emergencia de la privada los define la administración. Pídelos y tenlos a la mano.</footer>
+</div>
+
+<script>
+const V = "https://residentfy.com/videos/residente/";
+const ICON = {
+  pago:'<path d="M3 7h18v10H3z"/><path d="M3 11h18"/><path d="M7 15h3"/>',
+  frecuente:'<circle cx="9" cy="8" r="3"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6"/><path d="M16 4.5a3 3 0 0 1 0 6M21 20c0-2.6-1.6-4.8-4-5.6"/>',
+  eventual:'<circle cx="12" cy="8" r="3.2"/><path d="M5 20c0-3.9 3.1-7 7-7s7 3.1 7 7"/>',
+  evento:'<rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><path d="M14 14h3v3h-3zM18 18h3v3"/>',
+  reserva:'<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/><path d="M9 15l2 2 4-4"/>',
+  incidente:'<path d="M12 3l10 18H2z"/><path d="M12 10v5M12 18v.01"/>',
+  encuesta:'<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>',
+  chat:'<path d="M4 5h16v11H9l-5 4z"/>',
+  inicio:'<rect x="7" y="2" width="10" height="20" rx="2"/><path d="M11 18h2"/>'
+};
+const TASKS = [
+  { id:"pago", name:"Pagar mi cuota", sub:"Subir comprobante", keys:"pago cuota mantenimiento comprobante adeudo transferencia",
+    path:["Inicio","Pagos"], video:"comprobantepago",
+    steps:["Entra a la pestaña <b>Pagos</b>. Si tienes muchos registros, desliza hacia abajo para que aparezca el buscador.",
+           "Toca el adeudo que ya pagaste.",
+           "Toma una <b>foto clara de tu comprobante</b> con el botón de cámara.",
+           "Presiona <b>Enviar Pago</b> y luego <b>Confirmar</b>.",
+           "Listo. Te llegará una notificación cuando la mesa directiva lo apruebe."],
+    pipe:true,
+    notes:["Si la app se reinicia al tomar la foto, cierra otras apps o carga tu celular e inténtalo de nuevo.",
+           "En la pantalla de Inicio puedes tocar el monto pendiente o por aprobar para ver el detalle."] },
+  { id:"frecuente", name:"Visita frecuente", sub:"Familia, servicio, obra", keys:"visita frecuente familia trabajadora domestica jardinero albañil obra construccion acceso",
+    path:["Visitas","+","Frecuente"], video:"visitafrecuente",
+    steps:["Entra a <b>Visitas</b> y toca el botón <b>+</b> (Agregar visita).",
+           "Elige <b>Frecuente</b>.",
+           "Captura el <b>tipo de visita</b> y el <b>nombre</b>. Sin estos dos datos el botón de guardar no se activa.",
+           "Opcional: agrega su foto, una nota para el vigilante y los días en que viene.",
+           "Toca <b>Registrar visita</b>."],
+    notes:["Para trabajadores de obra, desactiva el acceso en cuanto termine el contrato.",
+           "Si quieres pausar a alguien sin borrarlo, apaga el interruptor <b>Activo</b>."] },
+  { id:"eventual", name:"Visita de una vez", sub:"Repartidor, amigo", keys:"visita eventual repartidor paqueteria amazon comida amigo una vez qr",
+    path:["Visitas","+","Eventual"], video:"visitaeventual",
+    steps:["Entra a <b>Visitas</b> y toca <b>+</b>.",
+           "Elige <b>Eventual</b>.",
+           "Captura el tipo de visita, la <b>fecha y hora de entrada</b> y el nombre.",
+           "Toca <b>Registrar visita</b>.",
+           "Opcional: toca <b>Compartir</b> para mandarle el <b>código QR</b> por WhatsApp. Lo muestra en caseta y el vigilante lo escanea."],
+    notes:["Solo tiene acceso el día que programaste. Si no llegó, regístralo de nuevo."] },
+  { id:"evento", name:"Fiesta o reunión", sub:"Una clave para todos", keys:"evento fiesta reunion carne asada cumpleaños invitados clave qr",
+    path:["Visitas","+","Eventual"], video:"visitaeventual",
+    steps:["Entra a <b>Visitas</b>, toca <b>+</b> y elige <b>Eventual</b>.",
+           "Captura la fecha del evento y activa la opción <b>Es evento/fiesta</b>.",
+           "Indica el <b>número de invitados</b> y toca <b>Registrar visita</b>.",
+           "La app genera una <b>clave de evento</b>. Compártela con todos tus invitados, junto con el QR si quieres.",
+           "Cada invitado solo dice la clave en caseta. No tienes que registrar a cada uno."],
+    notes:["La clave vale únicamente el día del evento.",
+           "Si vas a usar un área común, también resérvala (ver Reservar amenidad)."] },
+  { id:"reserva", name:"Reservar amenidad", sub:"Áreas comunes", keys:"reservar reserva amenidad alberca palapa area comun salon asador",
+    path:["Extras","Reservar","+"], video:"reserva",
+    steps:["Entra a <b>Extras</b> y toca <b>Reservar</b>.",
+           "Toca <b>+</b> y elige la amenidad.",
+           "Escoge una <b>fecha disponible</b> en el calendario y el horario.",
+           "Agrega la descripción del evento y el número de invitados.",
+           "Toca <b>Confirmar reserva</b> y acepta la alerta.",
+           "Espera la notificación de <b>aprobación</b> de la administración."],
+    notes:["La reserva cuenta hasta que la administración la aprueba.",
+           "Las fechas y horarios disponibles los configura la administración. Si ya alguien apartó ese día, no aparecerá libre."] },
+  { id:"incidente", name:"Reportar algo", sub:"Fallas, quejas, ideas", keys:"incidente reporte queja falla fuga luz alumbrado basura ruido mejora propuesta",
+    path:["Extras","Reportar incidente","+"], video:"incidente",
+    steps:["Entra a <b>Extras</b> y toca <b>Reportar incidente</b>.",
+           "Toca <b>+</b>.",
+           "Escribe el <b>asunto</b> y una <b>descripción</b> clara: qué pasa, dónde y desde cuándo.",
+           "Agrega una <b>foto</b>. Ayuda mucho a que lo atiendan rápido.",
+           "Toca <b>Enviar</b> y luego <b>Confirmar</b>."],
+    notes:["Estatus: <b>Pendiente</b> → <b>Revisado</b>. Te llega notificación cuando cambia.",
+           "También sirve para proponer mejoras a la privada."] },
+  { id:"encuesta", name:"Votar encuesta", sub:"Decisiones de la privada", keys:"encuesta votar voto decision asamblea",
+    path:["Extras","Encuestas"], video:"encuesta",
+    steps:["Entra a <b>Extras</b> y toca <b>Encuestas</b>.",
+           "Abre la encuesta activa.",
+           "Elige tu respuesta y, si quieres, deja un comentario.",
+           "Toca <b>Votar</b> y luego <b>Confirmar</b>.",
+           "Ya puedes ver cómo va la votación."],
+    notes:["Solo puedes votar una vez. Revisa bien antes de confirmar."] },
+  { id:"chat", name:"Chat con caseta", sub:"Hablar con vigilancia", keys:"chat vigilancia vigilante caseta guardia mensaje seguridad",
+    path:["Inicio","Chat"], video:"chat",
+    steps:["En <b>Inicio</b>, toca el ícono de <b>chat</b>.",
+           "Escribe tu mensaje y envíalo, como en cualquier chat.",
+           "Si llega una visita que no registraste, el vigilante te escribirá por aquí."],
+    notes:["Ni tú ni el vigilante necesitan el número de teléfono del otro.",
+           "Úsalo también para avisar algo de seguridad."] },
+  { id:"inicio", name:"Instalar y entrar", sub:"Primera vez", keys:"instalar descargar entrar login clave pin contraseña app store play store primera vez",
+    path:["App Store / Play Store"], video:"tour",
+    steps:["Busca <b>Residentfy</b> en la App Store (iPhone) o Play Store (Android) e instálala.",
+           "Ábrela y escribe la <b>clave de usuario</b> y el <b>PIN</b> que te dio la administración.",
+           "Activa <b>Recordarme</b> para no capturarlos cada vez.",
+           "Toca <b>Entrar</b>. En Inicio verás tu saldo pendiente y tus pagos por aprobar."],
+    notes:["Solo está disponible en tiendas de México.",
+           "Cuando la app se actualiza, puede pedirte la clave otra vez."] }
+];
+
+const grid = document.getElementById("grid"), detail = document.getElementById("detail"),
+      q = document.getElementById("q"), empty = document.getElementById("empty");
+const norm = s => s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"");
+let current = null;
+
+function renderGrid(){
+  grid.innerHTML = TASKS.map(t => `
+    <button class="tile" data-id="${t.id}" aria-pressed="${t.id===current}">
+      <svg viewBox="0 0 24 24" aria-hidden="true">${ICON[t.id]}</svg>
+      <span class="tile-name">${t.name}</span><span class="tile-sub">${t.sub}</span>
+    </button>`).join("");
+  filter();
+}
+function filter(){
+  const v = norm(q.value.trim()); let n = 0;
+  grid.querySelectorAll(".tile").forEach(b => {
+    const t = TASKS.find(x => x.id === b.dataset.id);
+    const hit = !v || norm(t.name+" "+t.sub+" "+t.keys).includes(v);
+    b.hidden = !hit; if (hit) n++;
+  });
+  empty.hidden = n > 0;
+}
+function open(id, scroll){
+  const t = TASKS.find(x => x.id === id) || TASKS[0];
+  current = t.id;
+  grid.querySelectorAll(".tile").forEach(b => b.setAttribute("aria-pressed", b.dataset.id === current));
+  const path = t.path.map(p => `<b>${p}</b>`).join('<i aria-hidden="true">›</i>');
+  const pipe = t.pipe ? `<div class="pipe" aria-label="Estatus del pago">
+      <div class="p1"><b>Pendiente</b>El adeudo que generó la mesa directiva.</div>
+      <div><b>Por aprobar</b>Ya enviaste tu comprobante.</div>
+      <div class="p3"><b>Aprobado</b>La mesa directiva lo validó.</div></div>` : "";
+  detail.innerHTML = `
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <span class="eyebrow">Paso a paso</span><h2>${t.name}</h2>
+      <div class="path" aria-label="Dónde está en la app">${path}</div>
+    </div>
+    ${pipe}
+    <ol class="steps">${t.steps.map((s,i)=>`<li><input type="checkbox" id="s-${t.id}-${i}"><label for="s-${t.id}-${i}"><span class="n" aria-hidden="true"></span><span class="t">${s}</span></label></li>`).join("")}</ol>
+    <div class="note"><strong>Ojo</strong><ul>${t.notes.map(n=>`<li>${n}</li>`).join("")}</ul></div>
+    <div class="row"><span id="prog" class="done"></span>
+      <span style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" id="reset">Reiniciar</button>
+      <a class="btn solid" href="${V+t.video}" target="_blank" rel="noopener">Ver video</a></span></div>`;
+  detail.querySelectorAll(".steps input").forEach(c => c.addEventListener("change", prog));
+  detail.querySelector("#reset").addEventListener("click", () => { detail.querySelectorAll(".steps input").forEach(c => c.checked = false); prog(); });
+  prog();
+  try { history.replaceState(null, "", "#" + t.id); } catch(e) {}
+  if (scroll) detail.scrollIntoView({behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block:"start"});
+}
+function prog(){
+  const all = detail.querySelectorAll(".steps input"), done = [...all].filter(c => c.checked).length;
+  detail.querySelector("#prog").textContent = done === all.length ? "¡Listo! Terminaste todos los pasos." : `${done} de ${all.length} pasos`;
+}
+grid.addEventListener("click", e => { const b = e.target.closest(".tile"); if (b) open(b.dataset.id, true); });
+document.querySelectorAll("[data-go]").forEach(b => b.addEventListener("click", () => open(b.dataset.go, true)));
+q.addEventListener("input", () => {
+  filter();
+  const vis = [...grid.querySelectorAll(".tile")].filter(b => !b.hidden);
+  if (q.value.trim() && vis.length === 1) open(vis[0].dataset.id, false);
+});
+renderGrid();
+const h = (location.hash || "").slice(1);
+open(TASKS.some(t => t.id === h) ? h : "pago", false);
+</script>
+</body>
+</html>
